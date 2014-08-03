@@ -1,26 +1,23 @@
 #pragma once
 
-
-
-
-template<typename T> 
-class Matrix
+template<typename T> class Matrix
 {
+private:
+	Matrix();
 public:
-	Matrix(int, int* );
-	Matrix(int, int );
+	Matrix(int, int);
 	~Matrix();
 
-	Matrix* operator*(const Matrix*) const;
-	Matrix* operator*(const T&) const;
+	static Matrix<T>* multiply(const Matrix<T>*, const Matrix<T>*);
+	static Matrix<T>* add(const Matrix<T>*, const Matrix<T>*);
 
-	Matrix* operator+(const Matrix*) const;
-	Matrix* operator+(const T&) const;
 
-	Matrix* inverse() const;
-	T determinant() const;
+	Matrix<T>* inverse() const;
+	T getDeterminant() const;
+	void randomize();
+	void print();
+
 
 	T* data;
 	int xDim, yDim;
 };
-

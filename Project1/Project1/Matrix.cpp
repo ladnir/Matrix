@@ -1,23 +1,11 @@
 #include "Matrix.h"
 
-
-template<typename T> Matrix<T>::Matrix(int dimentions, int* sizes)
-{
-	int size = 0;
-
-	for (int i = 0; i < dimentions; i++)
-		size *= sizes[i];
-
-	data = new T[size];
-
-}
 template<typename T> Matrix<T>::Matrix(int x, int y)
 {
 	xDim = x;
 	yDim = y;
 
 	data = new T[x*y];
-
 }
 
 template<typename T> Matrix<T>::~Matrix()
@@ -25,16 +13,16 @@ template<typename T> Matrix<T>::~Matrix()
 	delete data;
 }
 
-template<typename T> Matrix<T>* Matrix<T>::operator*(const Matrix<T>* m2) const
+
+template<typename T> Matrix<T>* Matrix<T>::multiply(const Matrix<T>* m1, const Matrix<T>* m2)
 {
-	Matrix<T>* m1 = this;
 
 	if (m1->xDim == m2->yDim){
 		Matrix<T>* product = new Matrix<T>(m2->xDim, m1->yDim);
 
 		int yOffset;
 		for (int y = 0; y < m1->yDim; y++){
-			yOffset = x*m2->xDim;
+			yOffset = y*m2->xDim;
 			for (int x = 0; x < m2->xDim; x++){
 				product->data[yOffset + x] = 0;
 				for (int inner = 0; inner < m1->xDim; inner++){
@@ -46,6 +34,39 @@ template<typename T> Matrix<T>* Matrix<T>::operator*(const Matrix<T>* m2) const
 		return product;
 	}
 	throw "MATRIX EXCEPTION: matrix multiplication dimention mismatch";
+}
+
+template<typename T> Matrix<T>* Matrix<T>::add(const Matrix<T>* m1, const Matrix<T>* m2)
+{
+
+	if (m1->xDim == m2->yDim && m1->yDim == m2->yDim){
+		Matrix<T>* result = new Matrix<T>(m1->xDim, m1->yDim);
+
+		for (int i = 0; i < m1->xDim * m1->yDim; i++)
+			result.data[i] = m1->data[i] + m2->data[i];
+
+		return result;
+	}
+	throw "MATRIX EXCEPTION: matrix addition dimention mismatch";
+}
+
+template<typename T> void Matrix<T>::randomize()
+{
+	for (int i = 0; i < xDim * yDim; i++){
+		data[i] = i;
+	}
+
+}
+
+template<typename T> void Matrix<T>::print()
+{
+	for (int y = 0; y < yDim; y++){
+		printf("| ");
+		for (int x = 0; x < xDim; x++){
+			printf("%f ", data[y*xDim + x]);
+		}
+		printf("|\n");
+	}
 }
 
 template<typename T> T Matrix<T>::getDeterminant() const 
@@ -71,6 +92,8 @@ template<typename T> Matrix<T>* Matrix<T>::inverse() const
 				inv->data[1] = -data[1] / det;
 				inv->data[2] = -data[2] / det;
 				inv->data[3] = data[0] / det;
+
+				return inv;
 			}
 		}
 		else
@@ -81,44 +104,32 @@ template<typename T> Matrix<T>* Matrix<T>::inverse() const
 	throw "MATRIX EXCEPTION: matrix Inverse does not exist";
 }
 
-template<typename T> Matrix<T>* Matrix<T>::operator*(const T& scaler) const
-{
-	Matrix<T>* result = new Matrix<T>(xDim, yDim);
-
-	for (int i = 0; i < xDim * yDim; i++)
-		result.data[i] = data[i] * scaler;
-
-	return result;
-
-}
-
-template<typename T> Matrix<T>* Matrix<T>::operator+(const Matrix<T>* m2) const
-{
-	if (xDim == yDim){
-		Matrix<T>* result = new Matrix<T>(xDim, yDim);
-
-		for (int i = 0; i < xDim * yDim; i++)
-			result.data[i] = data[i] + m2->data[i];
-
-		return result;
-	}
-	throw "MATRIX EXCEPTION: matrix addition dimention mismatch";
-}
-
-template<typename T> Matrix<T>* Matrix<T>::operator+(const T& scaler) const
-{
-	Matrix<T>* result = new Matrix<T>(xDim, yDim);
-
-	for (int i = 0; i < xDim * yDim; i++)
-		result.data[i] = data[i] + scaler;
-
-	return result;
-
-}
-
-
-
-template<typename T> Matrix<T>* operator* (const T& scaler, const Matrix<T>* m) const
-{
-	return m * scaler;
-}
+//template<typename T> Matrix<T> Matrix<T>::operator*(const T& scaler) const
+//{
+//	Matrix<T> result = Matrix<T>(xDim, yDim);
+//
+//	for (int i = 0; i < xDim * yDim; i++)
+//		result.data[i] = data[i] * scaler;
+//
+//	return result;
+//
+//}
+//
+//
+//template<typename T> Matrix<T> Matrix<T>::operator+(const T& scaler) const
+//{
+//	Matrix<T> result = Matrix<T>(xDim, yDim);
+//
+//	for (int i = 0; i < xDim * yDim; i++)
+//		result.data[i] = data[i] + scaler;
+//
+//	return result;
+//
+//}
+//
+//
+//
+//template<typename T> Matrix<T> operator* (const T& scaler, const Matrix<T>& m) 
+//{
+//	return m * scaler;
+//}
