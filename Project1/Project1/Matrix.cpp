@@ -29,6 +29,7 @@ template<typename T> Matrix<T>::Matrix(const Matrix<T>* m)
 template<typename T> Matrix<T>::Matrix(const int x, 
 									   const int y)
 {
+	data = nullptr;
 	initialize(x, y);
 }
 
