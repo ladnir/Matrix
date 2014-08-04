@@ -168,23 +168,28 @@ template<typename T> void Matrix<T>::add(const Matrix<T>* m1,
 template<typename T> T Matrix<T>::determinant() const 
 {
 	T det = 0;
-	if (xDim == yDim){
-		T* temps = (T*)malloc(2 * xDim * sizeof(T));
-
-		for (int x = 0; x < xDim * 2; x++){
-			temps[x] = data[x];
-			temps[x + xDim] = data[x];
+	if (xDim == yDim && xDim > 1){
+		if (xDim == 2){
+			det = data[0] * data[3] - data[1] * data[2];
 		}
+		else{
 
-		for (int i = 1; i < xDim; i++){
-			for (int x = 0; x < xDim; x++){
-				temps[i*xDim + x] *= data[(x + i) % xDim];
-				temps[i*xDim + x + xDim] *= data[(x - i) % xDim];
+			Matrix<T> minor = Matrix<T>(xDim - 1, yDim - 1);
+			int sign = 1;
+			for (int idx = 0; idx < xDim; idx++){
+				if (data[idx] != 0){
+					for (int yMinor = 0, yMajor = 1; yMinor < minor.yDim; yMinor++, yMajor++){
+						for (int xMinor = 0,xMajor = 0; xMinor < minor.xDim; xMinor++,xMajor++){
+							if (xMajor == idx)
+								xMajor++;
+							minor.data[yMinor *minor.xDim + xMinor] = data[(yMajor)*xDim + xMajor];
+						}
+					}
+					det += sign * data[idx] * minor.determinant();
+				}
+				sign *= -1;
 			}
-		}			
-
-		for (int x = 0; x < xDim; x++)
-			det += temps[x] - temps[x + xDim];
+		}
 	}
 	return det;
 }
@@ -248,7 +253,7 @@ template<typename T> Matrix<T> Matrix<T>::operator-(const T& scaler) const
 template<typename T> void Matrix<T>::randomize()const
 {
 	for (int i = 0; i < xDim * yDim; i++){
-		data[i] = (T)i;
+		data[i] = (T)((rand())%10);
 	}
 }
 
