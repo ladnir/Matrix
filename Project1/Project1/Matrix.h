@@ -1,5 +1,8 @@
 #pragma once
 
+#define __in__
+#define __out__
+
 template<typename T> class Matrix
 {
 public:
@@ -10,12 +13,16 @@ public:
 	~Matrix();
 
 	void initialize(int, int);
-
-	static void Identity	(const int size  , Matrix<T>*);
-	static void inverse		(const Matrix<T>*, Matrix<T>*);
+	
+	static void Identity	(const int size  , Matrix<T>*				   );
+	static void Identity	(const int x	 , const int y	   , Matrix<T>*);
+	static void inverse		(const Matrix<T>*, Matrix<T>*				   );
+	static void inverse		(Matrix<T>*		 , Matrix<T>*	   , T&		   );
 	static void exponentiate(const Matrix<T>*, const int	   , Matrix<T>*);
 	static void multiply	(const Matrix<T>*, const Matrix<T>*, Matrix<T>*);
 	static void add			(const Matrix<T>*, const Matrix<T>*, Matrix<T>*);
+
+	static void upperTriangulate(Matrix<T>*, Matrix<T>*, T&);
 
 	Matrix<T> operator*(const Matrix<T>&)const;
 	Matrix<T> operator+(const Matrix<T>&)const;
@@ -35,5 +42,6 @@ public:
 	int xDim, yDim;
 
 private:
-	T _det(const Matrix<T>,const int,const int,const int);
+
+	static void rowSwap(Matrix<T>*, const int, const int);
 };

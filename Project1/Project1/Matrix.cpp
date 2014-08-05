@@ -67,15 +67,30 @@ template<typename T> void Matrix<T>::initialize(const int x,
 template<typename T> void Matrix<T>::Identity(const int size,
 											  Matrix<T>* id)
 {
-	id->initialize(size, size);
-	for (int i = 0; i < size; i++)
-		id->data[i* size + i] = 1;
+	Matrix<T>::Identity(size, size, id);
 }
+
+template<typename T> void Matrix<T>::Identity(const int x,
+											  const int y,
+											  Matrix<T>* id)
+{
+	auto min = (x < y) ? x : y;
+
+	id->initialize(x, y);
+	for (int i = 0; i < x * y; i++)
+		id->data[i] = 0;
+
+	for (int i = 0; i <  min; i++)
+		id->data[i* x + i] = 1;
+}
+
 
 template<typename T> void Matrix<T>::exponentiate(const Matrix<T>* m1,
 												  const int power,
 												  Matrix<T>* product)
 {
+	if (power < -1)
+		throw "Not implemented exception";
 
 	if (power == 0){
 		Matrix<T>::Identity(m1->xDim, product);
@@ -166,6 +181,85 @@ template<typename T> void Matrix<T>::add(const Matrix<T>* m1,
 	throw "MATRIX EXCEPTION: matrix addition dimention mismatch";
 }
 
+template<typename T> void Matrix<T>::upperTriangulate(Matrix<T>* in,
+													  Matrix<T>* out,
+													  T& det)
+{
+	int xDim = in->xDim;
+	int yOffset = -xDim;
+	T* data = in->data;
+	T co;
+
+	Matrix<T>::Identity(xDim, in->yDim, out);
+	det = (T)1;
+
+	for (int i = 0; i < xDim; i++){
+		yOffset += xDim;
+
+		if (data[yOffset + i] == 0){
+			// This row has a zero in the main diagonal.
+			// Lets try and find a row to swap it with or return 
+			for (int j = i + 1; j < xDim; j++){
+				if (data[xDim* j + i]){
+					rowSwap(in, i, j);
+					rowSwap(out, i, j);
+					break;
+				}
+			}
+			if (data[yOffset + i] == 0){
+				det = (T)0;
+				return;
+			}
+		}
+		for (int j = i + 1; j < in->yDim; j++){
+			co = data[j * xDim + i] / data[yOffset + i];
+
+			// subtract the current row from the lower ones
+			for (int x = 0; x < xDim; x++){
+				data[j * xDim + x] -= co * data[yOffset + x];
+				out->data[j * xDim + x] -= co * out->data[yOffset + x];
+			}
+		}
+
+		det *= data[yOffset + i];
+	}
+}
+
+template<typename T> void Matrix<T>::rowSwap(Matrix<T>* m1,
+											 const int row1,
+											 const int row2)
+{
+	int row1Offset = row1*m1->xDim, row2Offset = row2*m1->xDim;
+	T temp;
+	for (int i = 0; i < m1->xDim; i++){
+		temp = m1->data[row1Offset + i];
+		m1->data[row1Offset + i] = m1->data[row2Offset + i];
+		m1->data[row2Offset + i] = temp;
+	}
+}
+
+template<typename T> void Matrix<T>::inverse(Matrix<T>* m1,
+											 Matrix<T>* inv,
+											 T& det)
+{
+	Matrix<T>::upperTriangulate(m1, inv, det);
+	auto min = (m1->xDim < m1->yDim) ? m1->xDim : m1->yDim;
+	T co;
+
+	for (int i = min - 1; i >= 0; i--){
+		for (int j = 0; j < min; j++){
+			co = m1->data[m1->xDim * j + i] / m1->data[m1->xDim * i + i];
+
+			m1->data[m1->xDim * j + i] -= co * m1->data[m1->xDim * i + i];
+			//m1->data[m1->xDim * j + i] = 0;
+
+			for (int k = 0; k < m1->xDim; k++){
+				inv->data[m1->xDim * j + k] -= co * inv->data[m1->xDim * i + k];
+			}
+		}
+	}
+}
+
 template<typename T> T Matrix<T>::determinant() const 
 {
 	T det = 0;
@@ -254,7 +348,7 @@ template<typename T> Matrix<T> Matrix<T>::operator-(const T& scaler) const
 template<typename T> void Matrix<T>::randomize()const
 {
 	for (int i = 0; i < xDim * yDim; i++){
-		data[i] = (T)((rand())%10);
+		data[i] = (T)((rand())%10) + 1;
 	}
 }
 
@@ -267,4 +361,5 @@ template<typename T> void Matrix<T>::print() const
 		}
 		printf("|\n");
 	}
+	printf("\n");
 }
