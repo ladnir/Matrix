@@ -1,7 +1,6 @@
 #pragma once
 
-#define __in__
-#define __out__
+#include "Vector.cpp"
 
 template<typename T> class Matrix
 {
@@ -33,6 +32,9 @@ public:
 	Matrix<T> operator+(const T&)const;
 	Matrix<T> operator-(const T&)const;
 	
+	Vector<T> getColumn(const int)const;
+	Vector<T> getRow(const int)const;
+
 	T determinant() const;
 
 	void randomize()const;

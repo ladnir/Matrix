@@ -242,22 +242,50 @@ template<typename T> void Matrix<T>::inverse(Matrix<T>* m1,
 											 Matrix<T>* inv,
 											 T& det)
 {
+	printf("in\n");
+	m1->print();
+
 	Matrix<T>::upperTriangulate(m1, inv, det);
+
+	printf("mid in\n");
+	m1->print();
+
+	printf("mid inv\n");
+	inv->print();
+
 	auto min = (m1->xDim < m1->yDim) ? m1->xDim : m1->yDim;
-	T co;
 
 	for (int i = min - 1; i >= 0; i--){
+		Vector<T> invRow = inv->getRow(i);
+		Vector<T> m1Row = m1->getRow(i);
+
+		invRow.divide(m1->data[m1->xDim * i + i]);
+		m1->data[m1->xDim * i + i] = (T)1;
+
 		for (int j = 0; j < min; j++){
-			co = m1->data[m1->xDim * j + i] / m1->data[m1->xDim * i + i];
-
-			m1->data[m1->xDim * j + i] -= co * m1->data[m1->xDim * i + i];
-			//m1->data[m1->xDim * j + i] = 0;
-
-			for (int k = 0; k < m1->xDim; k++){
-				inv->data[m1->xDim * j + k] -= co * inv->data[m1->xDim * i + k];
-			}
+			Vector<T> m1jRow = m1->getRow(j);
+			T scale = m1jRow.get(i);
+			m1jRow.scaleSubtract(m1Row,  scale);	
+			inv->getRow(j).scaleSubtract(invRow, scale);
 		}
 	}
+
+
+	printf("in , I?\n");
+	m1->print();
+
+	printf("inv\n");
+	inv->print();
+}
+
+template<typename T> Vector<T> Matrix<T>::getColumn(const int idx) const
+{
+	return Vector<T>(data + idx, xDim, yDim);
+}
+
+template<typename T> Vector<T> Matrix<T>::getRow(const int idx) const
+{
+	return Vector<T>(data + idx * xDim, 1, xDim);
 }
 
 template<typename T> T Matrix<T>::determinant() const 
