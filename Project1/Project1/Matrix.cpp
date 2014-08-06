@@ -172,13 +172,15 @@ template<typename T> void Matrix<T>::add(const Matrix<T>* m1,
 										 const Matrix<T>* m2, 
 										 Matrix<T>* sum)
 {
-	if (m1->xDim == m2->yDim && m1->yDim == m2->yDim){
-		sum->initialize(m1->xDim,m1->yDim)
+	int xMin, yMin;
+	xMin = (m1->xDim < m2->xDim) ? m1->xDim : m2->xDim;
+	yMin = (m1->yDim < m2->yDim) ? m1->yDim : m2->yDim;
+	
+	
 
 		for (int i = 0; i < m1->xDim * m1->yDim; i++)
 			sum.data[i] = m1->data[i] + m2->data[i];
 	}
-	throw "MATRIX EXCEPTION: matrix addition dimention mismatch";
 }
 
 template<typename T> void Matrix<T>::upperTriangulate(Matrix<T>* in,
@@ -278,16 +280,6 @@ template<typename T> void Matrix<T>::inverse(Matrix<T>* m1,
 	inv->print();
 }
 
-template<typename T> Vector<T> Matrix<T>::getColumn(const int idx) const
-{
-	return Vector<T>(data + idx, xDim, yDim);
-}
-
-template<typename T> Vector<T> Matrix<T>::getRow(const int idx) const
-{
-	return Vector<T>(data + idx * xDim, 1, xDim);
-}
-
 template<typename T> T Matrix<T>::determinant() const 
 {
 	T det = 0;
@@ -316,6 +308,8 @@ template<typename T> T Matrix<T>::determinant() const
 	}
 	return det;
 }
+
+template
 
 template<typename T> Matrix<T> Matrix<T>::operator*(const Matrix<T>& m2)const
 {
@@ -391,3 +385,4 @@ template<typename T> void Matrix<T>::print() const
 	}
 	printf("\n");
 }
+

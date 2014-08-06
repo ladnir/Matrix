@@ -31,17 +31,22 @@ public:
 	Matrix<T> operator/(const T&)const;
 	Matrix<T> operator+(const T&)const;
 	Matrix<T> operator-(const T&)const;
-	
-	Vector<T> getColumn(const int)const;
-	Vector<T> getRow(const int)const;
 
 	T determinant() const;
+
+	void set(const int, const int, T*);
+	void set(const int, T*);
+	T* get(const int, const int) const;
+	T* get(const int) const;
+	Vector<T> getColumn(const int)const;
+	Vector<T> getRow(const int)const;
 
 	void randomize()const;
 	void print()const;
 	
 	T* data;
-	int xDim, yDim;
+	int xDim, yDim, stride;
+	
 
 private:
 
