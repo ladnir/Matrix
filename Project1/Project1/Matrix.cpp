@@ -7,23 +7,17 @@ template<typename T> Matrix<T>::Matrix()
 {
 	xDim = -1;
 	yDim = -1;
+    stride = -1;
 	data = nullptr;
 }
 
 template<typename T> Matrix<T>::Matrix(const Matrix<T>& m)
 {
 	xDim = m.xDim;
+    stride =  m.xDim;
 	yDim = m.yDim;
 	data = new T[xDim*yDim];
 	memcpy(data, m.data, sizeof(T)*xDim*yDim);
-}
-
-template<typename T> Matrix<T>::Matrix(const Matrix<T>* m)
-{
-	xDim = m->xDim;
-	yDim = m->yDim;
-	data = new T[xDim*yDim];
-	memcpy(data, m->data, sizeof(T)*xDim*yDim);
 }
 
 template<typename T> Matrix<T>::Matrix(const int x, 
@@ -61,45 +55,47 @@ template<typename T> void Matrix<T>::initialize(const int x,
 	}
 
 	xDim = x;
+    stride = x; 
 	yDim = y;	
 }
 
 template<typename T> void Matrix<T>::Identity(const int size,
-											  Matrix<T>* id)
+											  Matrix<T>& id)
 {
 	Matrix<T>::Identity(size, size, id);
 }
 
 template<typename T> void Matrix<T>::Identity(const int x,
 											  const int y,
-											  Matrix<T>* id)
+											  Matrix<T>& id)
 {
 	auto min = (x < y) ? x : y;
 
-	id->initialize(x, y);
-	for (int i = 0; i < x * y; i++)
-		id->data[i] = 0;
+	id.initialize(x, y);
+	for (int i = 0; i <  y; i++)
+        for (int j =0;j<x;j++)
+		    id(j,i) = 0;
 
 	for (int i = 0; i <  min; i++)
-		id->data[i* x + i] = 1;
+		id(i,i) = 1;
 }
 
 
-template<typename T> void Matrix<T>::exponentiate(const Matrix<T>* m1,
+template<typename T> void Matrix<T>::exponentiate(const Matrix<T>& m1,
 												  const int power,
-												  Matrix<T>* product)
+												  Matrix<T>& product)
 {
 	if (power < -1)
 		throw "Not implemented exception";
 
 	if (power == 0){
-		Matrix<T>::Identity(m1->xDim, product);
+		Matrix<T>::Identity(m1.xDim, product);
 		
 	}
 	else{
 		int p = power, i = 1;
 		Matrix<T> temp = Matrix<T>(m1);
-		Matrix<T> * p1 = product, *p2 = &temp, *p3;
+		Matrix<T>& p1 = product, &p2 = temp, &p3;
 		if (p < 0){
 			Matrix<T>::inverse(m1, p1);
 			p3 = p1;
@@ -114,23 +110,23 @@ template<typename T> void Matrix<T>::exponentiate(const Matrix<T>* m1,
 			p2 = p3;
 		}
 		if (p1 == product){
-			memcpy(product->data, temp.data, product->xDim * product->yDim * sizeof(T));
+			memcpy(product.data, temp.data, product.xDim * product.yDim * sizeof(T));
 		}
 	}
 }
 
-template<typename T> void Matrix<T>::inverse(const Matrix<T>* m1, Matrix<T>* inv)
+template<typename T> void Matrix<T>::inverse(const Matrix<T>& m1, Matrix<T>& inv)
 {
-	if (m1->xDim == m1->yDim){
-		inv->initialize(m1->xDim, m1->yDim);
+	if (m1.xDim == m1.yDim){
+		inv.initialize(m1.xDim, m1.yDim);
 
-		if (m1->xDim == 2){
-			T det = m1->determinant();
+		if (m1.xDim == 2){
+			T det = m1.determinant();
 			if (det){
-				inv->data[0] = m1->data[3] / det;
-				inv->data[1] = -m1->data[1] / det;
-				inv->data[2] = -m1->data[2] / det;
-				inv->data[3] = m1->data[0] / det;
+				inv(0,0) = m1(1,1) / det;
+				inv(1,0) = -m1(1,0) / det;
+                inv(0, 1) = -m1(0, 1) / det;
+                inv(1, 1) = m1(1, 1) / det;
 				return;
 			}
 		}
@@ -145,20 +141,18 @@ template<typename T> void Matrix<T>::inverse(const Matrix<T>* m1, Matrix<T>* inv
 	}
 }
 
-template<typename T> void Matrix<T>::multiply(const Matrix<T>* m1, 
-											  const Matrix<T>* m2, 
-											  Matrix<T>* product)
+template<typename T> void Matrix<T>::multiply(const Matrix<T>& m1, 
+											  const Matrix<T>& m2, 
+											  Matrix<T>& product)
 {
-	if (m1->xDim == m2->yDim){
-		product->initialize(m2->xDim, m1->yDim);
+	if (m1.xDim == m2.yDim){
+		product.initialize(m2.xDim, m1.yDim);
 
-		int yOffset;
-		for (int y = 0; y < m1->yDim; y++){
-			yOffset = y*m2->xDim;
-			for (int x = 0; x < m2->xDim; x++){
-				product->data[yOffset + x] = 0;
-				for (int inner = 0; inner < m1->xDim; inner++){
-					product->data[yOffset + x] += m1->data[yOffset + inner] * m2->data[inner * m2->xDim + x];
+		for (int y = 0; y < m1.yDim; y++){
+			for (int x = 0; x < m2.xDim; x++){
+				product(x,y) = 0;
+				for (int inner = 0; inner < m1.xDim; inner++){
+                    product(x, y) += m1(inner, y) * m2(x, inner);
 				}
 			}
 		}
@@ -168,139 +162,144 @@ template<typename T> void Matrix<T>::multiply(const Matrix<T>* m1,
 		throw  "MATRIX EXCEPTION: matrix multiplication dimention mismatch";
 }
 
-template<typename T> void Matrix<T>::add(const Matrix<T>* m1, 
-										 const Matrix<T>* m2, 
-										 Matrix<T>* sum)
+template<typename T> void Matrix<T>::add(const Matrix<T>& m1, 
+										 const Matrix<T>& m2, 
+										 Matrix<T>& sum)
 {
-	int xMin, yMin;
-	xMin = (m1->xDim < m2->xDim) ? m1->xDim : m2->xDim;
-	yMin = (m1->yDim < m2->yDim) ? m1->yDim : m2->yDim;
-	
+    if (sum.data == nullptr)
+        sum.initialize(m1.xDim, m1.y);
 	
 
-		for (int i = 0; i < m1->xDim * m1->yDim; i++)
-			sum.data[i] = m1->data[i] + m2->data[i];
-	}
+
+	if
+    
+		for (int i = 0; i < m1.xDim * m1.yDim; i++)
+			sum(i) = m1(i) + m2(i);
+	
 }
 
-template<typename T> void Matrix<T>::upperTriangulate(Matrix<T>* in,
-													  Matrix<T>* out,
+template<typename T> void Matrix<T>::upperTriangulate(Matrix<T>& in,
+													  Matrix<T>& out,
 													  T& det)
 {
-	int xDim = in->xDim;
-	int yOffset = -xDim;
-	T* data = in->data;
+	int xDim = in.xDim;
+	//T* data = in.data;
 	T co;
 
-	Matrix<T>::Identity(xDim, in->yDim, out);
+	Matrix<T>::Identity(xDim, in.yDim, out);
 	det = (T)1;
 
 	for (int i = 0; i < xDim; i++){
-		yOffset += xDim;
 
-		if (data[yOffset + i] == 0){
+
+		if (in(i,i) == 0){
 			// This row has a zero in the main diagonal.
 			// Lets try and find a row to swap it with or return 
 			for (int j = i + 1; j < xDim; j++){
-				if (data[xDim* j + i]){
+				if (in(i,j) == 0){
 					rowSwap(in, i, j);
 					rowSwap(out, i, j);
 					break;
 				}
 			}
-			if (data[yOffset + i] == 0){
+			if (in(i,i) == 0){
 				det = (T)0;
 				return;
 			}
 		}
-		for (int j = i + 1; j < in->yDim; j++){
-			co = data[j * xDim + i] / data[yOffset + i];
+
+        det *= data(i, i);
+
+		for (int j = i + 1; j < in.yDim; j++){
+            co = in(i, j) / in(i,i);
 
 			// subtract the current row from the lower ones
 			for (int x = 0; x < xDim; x++){
-				data[j * xDim + x] -= co * data[yOffset + x];
-				out->data[j * xDim + x] -= co * out->data[yOffset + x];
+				in(x,j) -= co * in(x,i) ;
+				out(x,j) -= co * in(x,i);
 			}
 		}
 
-		det *= data[yOffset + i];
 	}
 }
 
-template<typename T> void Matrix<T>::rowSwap(Matrix<T>* m1,
+template<typename T> void Matrix<T>::rowSwap(Matrix<T>& m1,
 											 const int row1,
 											 const int row2)
 {
-	int row1Offset = row1*m1->xDim, row2Offset = row2*m1->xDim;
+	//int row1Offset = row1*m1.xDim, row2Offset = row2*m1.xDim;
 	T temp;
-	for (int i = 0; i < m1->xDim; i++){
-		temp = m1->data[row1Offset + i];
-		m1->data[row1Offset + i] = m1->data[row2Offset + i];
-		m1->data[row2Offset + i] = temp;
+	for (int i = 0; i < m1.xDim; i++){
+        temp = m1(i,row1);
+        m1(i, row1) = m1(i,row2);
+        m1(i, row2) = temp;
 	}
 }
 
-template<typename T> void Matrix<T>::inverse(Matrix<T>* m1,
-											 Matrix<T>* inv,
+template<typename T> void Matrix<T>::inverse(Matrix<T>& m1,
+											 Matrix<T>& inv,
 											 T& det)
 {
 	printf("in\n");
-	m1->print();
+	m1.print();
 
 	Matrix<T>::upperTriangulate(m1, inv, det);
 
 	printf("mid in\n");
-	m1->print();
+	m1.print();
 
 	printf("mid inv\n");
-	inv->print();
+	inv.print();
 
-	auto min = (m1->xDim < m1->yDim) ? m1->xDim : m1->yDim;
+	auto min = (m1.xDim < m1.yDim) ? m1.xDim : m1.yDim;
 
 	for (int i = min - 1; i >= 0; i--){
-		Vector<T> invRow = inv->getRow(i);
-		Vector<T> m1Row = m1->getRow(i);
+		Vector<T> invRow = inv.getRow(i);
+		Vector<T> m1Row = m1.getRow(i);
 
-		invRow.divide(m1->data[m1->xDim * i + i]);
-		m1->data[m1->xDim * i + i] = (T)1;
+		invRow.divide(m1(i,i));
+        m1(i, i) = (T)1;
 
 		for (int j = 0; j < min; j++){
-			Vector<T> m1jRow = m1->getRow(j);
-			T scale = m1jRow.get(i);
+			Vector<T> m1jRow = m1.getRow(j);
+			T scale = m1jRow(i);
+
 			m1jRow.scaleSubtract(m1Row,  scale);	
-			inv->getRow(j).scaleSubtract(invRow, scale);
+			inv.getRow(j).scaleSubtract(invRow, scale);
 		}
 	}
 
 
 	printf("in , I?\n");
-	m1->print();
+	m1.print();
 
 	printf("inv\n");
-	inv->print();
+	inv.print();
 }
 
 template<typename T> T Matrix<T>::determinant() const 
 {
 	T det = 0;
+    Matrix<T>& mtx = *this;
+
 	if (xDim == yDim && xDim > 1){
 		if (xDim == 2){
-			det = data[0] * data[3] - data[1] * data[2];
+			det = mtx(0,0) * mtx(1,1) - mtx(1,0) * mtx(0,1);
 		}
 		else{
 
 			Matrix<T> minor = Matrix<T>(xDim - 1, yDim - 1);
 			int sign = 1;
 			for (int idx = 0; idx < xDim; idx++){
-				if (data[idx] != 0){
+				if (mtx(idx,0) != 0){
 					for (int yMinor = 0, yMajor = 1; yMinor < minor.yDim; yMinor++, yMajor++){
 						for (int xMinor = 0,xMajor = 0; xMinor < minor.xDim; xMinor++,xMajor++){
 							if (xMajor == idx)
 								xMajor++;
-							minor.data[yMinor *minor.xDim + xMinor] = data[(yMajor)*xDim + xMajor];
+                            minor(xMinor, yMinor) =mtx(xMajor,yMajor);
 						}
 					}
-					det += sign * data[idx] * minor.determinant();
+                    det += sign * mtx(idx, 0) * minor.determinant();
 				}
 				sign *= -1;
 			}
@@ -309,77 +308,94 @@ template<typename T> T Matrix<T>::determinant() const
 	return det;
 }
 
-template
+template<typename T> T&  Matrix<T>::operator()(const int& x, const int& y) const{
+    return *(data + y * stride + x);
+}
+template<typename T> T&  Matrix<T>::operator()(const int& idx) const{
+    return *(data + idx);
+}
 
 template<typename T> Matrix<T> Matrix<T>::operator*(const Matrix<T>& m2)const
 {
 	Matrix<T> product = Matrix<T>();
-	Matrix<T>::multiply(this, &m2, &product);
+	Matrix<T>::multiply(*this, m2, product);
 	return product;
 }
 
 template<typename T> Matrix<T> Matrix<T>::operator^(const int& power)const
 {
 	Matrix<T> product = Matrix<T>();
-	Matrix<T>::exponentiate(this, power, &product);
+	Matrix<T>::exponentiate(*this, power, product);
 	return product;
 }
 
 template<typename T> Matrix<T> Matrix<T>::operator*(const T& scaler) const
 {
-	Matrix<T> result = Matrix<T>(xDim, yDim);
+    Matrix<T> result = Matrix<T>(xDim, yDim);
+    Matrix<T>& mtx = *this;
 
 	for (int i = 0; i < xDim * yDim; i++)
-		result.data[i] = data[i] * scaler;
+		result(i) = mtx(i) * scaler;
 
 	return result;
 }
 
 template<typename T> Matrix<T> Matrix<T>::operator+(const T& scaler) const
 {
-	Matrix<T> result = Matrix<T>(xDim, yDim);
+    Matrix<T> result = Matrix<T>(xDim, yDim);
+    Matrix<T>& mtx = *this;
 
 	for (int i = 0; i < xDim * yDim; i++)
-		result.data[i] = data[i] + scaler;
+		result(i) = mtx(i) + scaler;
 
 	return result;
 }
 
 template<typename T> Matrix<T> Matrix<T>::operator/(const T& scaler) const
 {
-	Matrix<T> result = Matrix<T>(xDim, yDim);
+    Matrix<T> result = Matrix<T>(xDim, yDim);
+    Matrix<T>& mtx = *this;
 
 	for (int i = 0; i < xDim * yDim; i++)
-		result.data[i] = data[i] / scaler;
+		result(i) = mtx(i) / scaler;
 
 	return result;
 }
 
 template<typename T> Matrix<T> Matrix<T>::operator-(const T& scaler) const
 {
-	Matrix<T> result = Matrix<T>(xDim, yDim);
+    Matrix<T> result = Matrix<T>(xDim, yDim);
+    Matrix<T>& mtx = *this;
 
 	for (int i = 0; i < xDim * yDim; i++)
-		result.data[i] = data[i] - scaler;
+		result(i) = mtx(i) - scaler;
 
 	return result;
 }
 
+//template<typename T> Vector<T> getColumn(const int col)const{
+//    
+//    return Vector<T>(data + col, yDim, xDim);
+//}
 
-
-template<typename T> void Matrix<T>::randomize()const
+template<typename T> void Matrix<T>::randomize()
 {
+
+    Matrix<T>& mtx = *this;
+
 	for (int i = 0; i < xDim * yDim; i++){
-		data[i] = (T)((rand())%10) + 1;
+		mtx(i) = (T)((rand())%10) + 1;
 	}
 }
 
-template<typename T> void Matrix<T>::print() const
+template<typename T> void Matrix<T>::print() 
 {
+    Matrix<T>& mtx = *this;
+
 	for (int y = 0; y < yDim; y++){
 		printf("| ");
 		for (int x = 0; x < xDim; x++){
-			printf("%f ", data[y*xDim + x]);
+			printf("%f ", mtx(x,y));
 		}
 		printf("|\n");
 	}

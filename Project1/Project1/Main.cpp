@@ -12,9 +12,9 @@ int main(int argc, char* argv){
 	m1.print();
 	printf("\n");
 
-	float det;
+	float det = 1;
 	//Matrix<float>::upperTriangulate(&m1, &out, det);
-	Matrix<float>::inverse(&m1, &out, det);
+	//Matrix<float>::inverse(&m1, &out, det);
 
 	printf("%f\n\n", det);
 
