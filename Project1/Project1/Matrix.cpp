@@ -10,6 +10,7 @@ template<typename T> Matrix<T>::Matrix()
     xDim = -1;
     yDim = -1;
     stride = -1;
+    owner =  false;
     data = nullptr;
 }
 
@@ -18,6 +19,7 @@ template<typename T> Matrix<T>::Matrix(const Matrix<T>& m)
     xDim = m.xDim;
     stride = m.xDim;
     yDim = m.yDim;
+    owner = true;
     data = new T[xDim*yDim];
     memcpy(data, m.data, sizeof(T)*xDim*yDim);
 }
@@ -31,7 +33,8 @@ template<typename T> Matrix<T>::Matrix(const int x,
 
 template<typename T> Matrix<T>::~Matrix()
 {
-    delete data;
+    if (owner)
+        delete data;
 }
 #pragma endregion 
 
@@ -50,11 +53,13 @@ template<typename T> void Matrix<T>::initialize(const int x,
         {
             // The data array is wht wrong size
             delete data;
+            owner = true;
             data = new T[x*y];
         }
     }
     else
     {
+        owner = true;
         data = new T[x*y];
     }
 
@@ -166,14 +171,15 @@ template<typename T> void Matrix<T>::inverse(Matrix<T>& m1,
         // From the bottom right corner of the upper triangle
         //  row reduce the elements of that column above it.
 
+        m1.print(inv);
         Vector<T> invRow = inv.getRowView(i);
         Vector<T> m1Row = m1.getRowView(i);
 
         // scale this row by its element to get a value of 1
         invRow /= m1(i, i);
-        m1(i, i) = (T)1;
+        m1(i, i) /= m1(i, i);
 
-        for (int j = 0; j < min; j++){
+        for (int j = 0; j < i; j++){
             // March throught the rows above it and eliminate 
             Vector<T> m1jRow = m1.getRowView(j);
             T& scale = m1jRow(i);
@@ -241,7 +247,7 @@ template<typename T> void Matrix<T>::upperTriangulate(Matrix<T>& in,
 
     for (int i = 0; i < xDim; i++){
 
-
+       // in.print(out);
         if (in(i, i) == 0){
             // This row has a zero in the main diagonal.
             // Lets try and find a row to swap it with or return 
@@ -262,12 +268,14 @@ template<typename T> void Matrix<T>::upperTriangulate(Matrix<T>& in,
 
         for (int j = i + 1; j < in.yDim; j++){
             co = in(i, j) / in(i, i);
-
+            //printf("scale subetract row %d at %g\n", j, in(i,i));
             // subtract the current row from the lower ones
-            for (int x = 0; x < xDim; x++){
-                in(x, j) -= co * in(x, i);
-                out(x, j) -= co * in(x, i);
-            }
+            in.getRowView(j).scaleSubtract(in.getRowView(i) , co);
+            out.getRowView(j).scaleSubtract(out.getRowView(i), co);
+            //for (int x = 0; x < xDim; x++){
+            //    in(x, j) -= co * in(x, i);
+            //    out(x, j) -= co * in(x, i);
+            //}
         }
 
     }
@@ -440,25 +448,36 @@ template<typename T> Vector<T> Matrix<T>::getRowView(const int row)const{
 
 template<typename T> void Matrix<T>::randomize()
 {
-
-    Matrix<T>& mtx = *this;
-
     for (int i = 0; i < xDim * yDim; i++){
-        mtx(i) = (T)((rand()) % 10) + 1;
+        this->operator()(i) = (T)(rand() % 10) + 1;
     }
 }
 
 template<typename T> void Matrix<T>::print()
 {
-    Matrix<T>& mtx = *this;
     printf("xDim %d\nyDim %d\n", xDim, yDim);
     for (int y = 0; y < yDim; y++){
-        printf("| ");
         for (int x = 0; x < xDim; x++){
-            printf("%f ", mtx(x, y));
+            printf("%4.2f\t", data[xDim * y + x]);
         }
-        printf("|\n");
+        printf("\n");
     }
-    printf("\n");
+    printf("________________________\n");
+}
+template<typename T> void Matrix<T>::print(Matrix<T>& m2)
+{
+    printf("xDim %d\nyDim %d\n", xDim, yDim);
+    for (int y = 0; y < yDim; y++){
+        for (int x = 0; x < xDim; x++){
+            printf("%4.2f\t", data[xDim * y + x]);
+        }
+
+        printf("|\t");
+        for (int x = 0; x < xDim; x++){
+            printf("%4.2f\t", m2(x,y));
+        }
+        printf("\n");
+    }
+    printf("________________________\n");
 }
 

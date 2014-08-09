@@ -45,12 +45,14 @@ public:
 	Vector<T> getColumnView(const int)const;
 	Vector<T> getRowView(const int)const;
 
-	void randomize();
-	void print();
+    void randomize();
+    void print();
+    void print(Matrix<T>&);
 	
 	int xDim, yDim, stride;
 
 protected:
+        bool owner;
         T* data;
 
 private:

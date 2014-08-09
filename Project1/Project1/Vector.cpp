@@ -2,6 +2,7 @@
 
 template<typename T> Vector<T>::Vector(const int size){
 
+    owner = true;
     data = (T*)malloc(sizeof(T)* size);
     xDim = size;
     yDim = 1;
@@ -16,6 +17,7 @@ template<typename T> Vector<T>::Vector(T* data,
 {
 
     //printf("Creating Vector: stride = %d   width = %d\n",stride, width);
+    owner = false;
     this->data = data;
     this->stride = stride;
 
@@ -33,7 +35,8 @@ template<typename T> Vector<T>::Vector(T* data,
 template<typename T>
 Vector<T>::~Vector()
 {
-    delete data;
+    if (owner)
+        delete data;
 }
 
 
