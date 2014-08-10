@@ -154,47 +154,31 @@ template<typename T> void Matrix<T>::inverse(Matrix<T>& m1,
                                              Matrix<T>& inv,
                                              T& det)
 {
-    printf("in\n");
-    m1.print();
-
-    Matrix<T>::upperTriangulate(m1, inv, det);
-
-    printf("mid in\n");
-    m1.print();
-
-    printf("mid inv\n");
-    inv.print();
-
+    assert(m1.xDim == m1.yDim);
+    
+    upperTriangulate(m1, inv, det);
     auto min = (m1.xDim < m1.yDim) ? m1.xDim : m1.yDim;
 
     for (int i = min - 1; i >= 0; i--){
         // From the bottom right corner of the upper triangle
         //  row reduce the elements of that column above it.
 
-        m1.print(inv);
-        Vector<T> invRow = inv.getRowView(i);
-        Vector<T> m1Row = m1.getRowView(i);
+        auto invRow = inv.getRowView(i);
+        auto m1Row = m1.getRowView(i);
 
         // scale this row by its element to get a value of 1
         invRow /= m1(i, i);
-        m1(i, i) /= m1(i, i);
+        m1(i, i) = 1;
 
         for (int j = 0; j < i; j++){
             // March throught the rows above it and eliminate 
-            Vector<T> m1jRow = m1.getRowView(j);
-            T& scale = m1jRow(i);
+            auto m1jRow = m1.getRowView(j);
+            auto scale = m1jRow(i);
 
             m1jRow.scaleSubtract(m1Row, scale);
             inv.getRowView(j).scaleSubtract(invRow, scale);
         }
     }
-
-
-    printf("in , I?\n");
-    m1.print();
-
-    printf("inv\n");
-    inv.print();
 }
 
 template<typename T> void Matrix<T>::multiply(const Matrix<T>& m1,
@@ -222,13 +206,11 @@ template<typename T> void Matrix<T>::add(const Matrix<T>& m1,
                                          const Matrix<T>& m2,
                                          Matrix<T>& sum)
 {
+    assert(m1.xDim == m2.xDim && m1.yDim == m2.yDim);
+    
     if (sum.data == nullptr)
-        sum.initialize(m1.xDim, m1.y);
-
-
-
-    if
-
+        sum.initialize(m1.xDim, m1.yDim);
+        
     for (int i = 0; i < m1.xDim * m1.yDim; i++)
         sum(i) = m1(i) + m2(i);
 
@@ -238,16 +220,15 @@ template<typename T> void Matrix<T>::upperTriangulate(Matrix<T>& in,
                                                       Matrix<T>& out,
                                                       T& det)
 {
-    int xDim = in.xDim;
-    //T* data = in.data;
-    T co;
+    assert(in.xDim == out.xDim && in.yDim == out.yDim);
+
+    auto xDim = in.xDim;
+    T scale;
 
     Matrix<T>::Identity(xDim, in.yDim, out);
-    det = (T)1;
+    det = (T)-1;
 
     for (int i = 0; i < xDim; i++){
-
-       // in.print(out);
         if (in(i, i) == 0){
             // This row has a zero in the main diagonal.
             // Lets try and find a row to swap it with or return 
@@ -267,15 +248,10 @@ template<typename T> void Matrix<T>::upperTriangulate(Matrix<T>& in,
         det *= in(i, i);
 
         for (int j = i + 1; j < in.yDim; j++){
-            co = in(i, j) / in(i, i);
-            //printf("scale subetract row %d at %g\n", j, in(i,i));
+            scale = in(i, j) / in(i, i);
             // subtract the current row from the lower ones
-            in.getRowView(j).scaleSubtract(in.getRowView(i) , co);
-            out.getRowView(j).scaleSubtract(out.getRowView(i), co);
-            //for (int x = 0; x < xDim; x++){
-            //    in(x, j) -= co * in(x, i);
-            //    out(x, j) -= co * in(x, i);
-            //}
+            in.getRowView(j).scaleSubtract(in.getRowView(i), scale);
+            out.getRowView(j).scaleSubtract(out.getRowView(i), scale);
         }
 
     }
@@ -308,7 +284,7 @@ template<typename T> void Matrix<T>::scaleSubtract(const Matrix<T>& subtract, co
 template<typename T> T Matrix<T>::determinant() const
 {
     T det = 0;
-    Matrix<T>& mtx = *this;
+    auto& mtx = *this;
 
     if (xDim == yDim && xDim > 1){
         if (xDim == 2){
@@ -316,7 +292,7 @@ template<typename T> T Matrix<T>::determinant() const
         }
         else{
 
-            Matrix<T> minor = Matrix<T>(xDim - 1, yDim - 1);
+            auto minor = Matrix<T>(xDim - 1, yDim - 1);
             int sign = 1;
             for (int idx = 0; idx < xDim; idx++){
                 if (mtx(idx, 0) != 0){
