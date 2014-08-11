@@ -7,29 +7,29 @@
 
 int main(int argc, char* argv){
     
+    int size = 1024;
 
-	auto m1 = Matrix<float>(3,3);	
-    Matrix<float> out;
-	
-    Vector<float> v1 = m1.getColumnView(1);
-	m1.randomize();
+    //auto m = Matrix<float>(3,3);
+    //Matrix<float> t;
 
+    //m.randomize();
 
-    printf("before\n");
-	m1.print();
+    //Matrix<float>::transpose(m,t);
+
+    //m.print(t);
+
+    for (int i = 0; i < 1; i++){
+        auto m1 = Matrix<float>(size, size);
+        auto m2 = Matrix<float>(size, size);
+	    
+        m1.randomize();
+        m2.randomize();
+        Matrix<float> out;
+        //m1.print();
+        //m2.print();
     
-	float det;
-	//Matrix<float>::upperTriangulate(&m1, &out, det);
-    Matrix<float>::inverse(m1, out, det);
-    
-	printf("%f\n\n", det);
-    
-	m1.print();
-	printf("\n vectot\n");
-    v1.print();
-
-
-
-	while (1);
+        Matrix<float>::multiply(m1, m2, out);
+        //Matrix<float>::blockMultiply(m1, m2, out);
+    }
 	return 1;
 }

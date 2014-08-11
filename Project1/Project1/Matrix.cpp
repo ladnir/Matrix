@@ -123,33 +123,6 @@ template<typename T> void Matrix<T>::exponentiate(const Matrix<T>& m1,
     }
 }
 
-template<typename T> void Matrix<T>::inverse(const Matrix<T>& m1, 
-                                             Matrix<T>& inv)
-{
-    if (m1.xDim == m1.yDim){
-        inv.initialize(m1.xDim, m1.yDim);
-
-        if (m1.xDim == 2){
-            T det = m1.determinant();
-            if (det){
-                inv(0, 0) = m1(1, 1) / det;
-                inv(1, 0) = -m1(1, 0) / det;
-                inv(0, 1) = -m1(0, 1) / det;
-                inv(1, 1) = m1(1, 1) / det;
-                return;
-            }
-        }
-        else
-        {
-            throw "MATRIX EXCEPTION: large matrix Inverse not supported";
-        }
-    }
-    else
-    {
-        throw "MATRIX EXCEPTION: matrix Inverse does not exist";
-    }
-}
-
 template<typename T> void Matrix<T>::inverse(Matrix<T>& m1,
                                              Matrix<T>& inv,
                                              T& det)
@@ -181,27 +154,91 @@ template<typename T> void Matrix<T>::inverse(Matrix<T>& m1,
     }
 }
 
-template<typename T> void Matrix<T>::multiply(const Matrix<T>& m1,
-                                              const Matrix<T>& m2,
-                                              Matrix<T>& product)
+template<typename T> void Matrix<T>::transpose(const Matrix<T>& in,
+                                               Matrix<T>& trans)
 {
-    if (m1.xDim == m2.yDim){
-        product.initialize(m2.xDim, m1.yDim);
+    if (trans.data == nullptr)
+        trans.initialize(in.yDim, in.xDim);
 
-        for (int y = 0; y < m1.yDim; y++){
-            for (int x = 0; x < m2.xDim; x++){
-                product(x, y) = 0;
-                for (int inner = 0; inner < m1.xDim; inner++){
-                    product(x, y) += m1(inner, y) * m2(x, inner);
-                }
-            }
+    int yOff;
+    for (int y = 0; y < in.yDim; y++){
+        yOff = y * in.xDim;
+        for (int x = 0; x < in.xDim; x++){
+            trans(y, x) = in(yOff + x);
         }
     }
-
-    else
-        throw  "MATRIX EXCEPTION: matrix multiplication dimention mismatch";
 }
 
+template<typename T> void Matrix<T>::multiply(const Matrix<T>& m1,
+    const Matrix<T>& m2,
+    Matrix<T>& product)
+{
+    assert(m1.xDim == m2.yDim);
+
+    Matrix<T> m2Trans;
+    transpose(m2, m2Trans);
+
+    product.initialize(m2.xDim, m1.yDim);
+
+    //float sum = 0;
+    int yOff, yTranOff;
+    for (int y = 0; y < m1.yDim; y++){
+        yOff = y * product.xDim;
+        for (int x = 0; x < m2.xDim; x++){
+            yTranOff = x * m2.yDim;
+            product(yOff + x) = 0;
+
+            for (int inner = 0; inner < m1.xDim; inner++){
+                product(yOff + x) += m1(yOff + inner) * m2Trans(yTranOff + inner);
+            }
+            //sum += product(yOff + x);
+        }
+    }
+    //assert(32483663872.0 == sum);
+
+}
+
+template<typename T> void Matrix<T>::blockMultiply(const Matrix<T>& m1,
+    const Matrix<T>& m2,
+    Matrix<T>& product)
+{
+    assert(m1.xDim == m2.yDim);
+
+    Matrix<T> m2Trans;
+    transpose(m2, m2Trans);
+
+    product.initialize(m2.xDim, m1.yDim);
+
+    _blockMultiply(0,0,m1.xDim,m1,m2Trans,product);
+
+    float sum = 0 ;
+    for (int i = 0; i < m1.xDim*m1.yDim; i++){
+        sum += product(i);
+    }
+    assert(32483663872.0 == sum);
+
+}
+
+template<typename T> void Matrix<T>::_blockMultiply(int xStart, 
+                                               int yStart, int width,
+                                               const Matrix<T>& m1,
+                                               const Matrix<T>& m2,
+                                               Matrix<T>& product)
+{
+    if (width == 1){
+        product(xStart, yStart) = 0;
+        for (int inner = 0; inner < m1.xDim; inner++){
+            product( xStart, yStart) += m1(inner, yStart) * m2(inner, xStart);
+        }
+    }
+    else{
+        int hWidth = width / 2;
+        _blockMultiply(xStart         , yStart         , hWidth, m1, m2, product);
+        _blockMultiply(xStart + hWidth, yStart         , hWidth, m1, m2, product);
+        _blockMultiply(xStart         , yStart + hWidth, hWidth, m1, m2, product);
+        _blockMultiply(xStart + hWidth, yStart + hWidth, hWidth, m1, m2, product);
+    }
+}
 template<typename T> void Matrix<T>::add(const Matrix<T>& m1,
                                          const Matrix<T>& m2,
                                          Matrix<T>& sum)
@@ -440,6 +477,7 @@ template<typename T> void Matrix<T>::print()
     }
     printf("________________________\n");
 }
+
 template<typename T> void Matrix<T>::print(Matrix<T>& m2)
 {
     printf("xDim %d\nyDim %d\n", xDim, yDim);
