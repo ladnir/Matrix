@@ -18,6 +18,7 @@ public:
 	static void exponentiate    (const Matrix<T>&, const int	   , Matrix<T>&);
 	static void multiply	    (const Matrix<T>&, const Matrix<T>&, Matrix<T>&);
 	static void blockMultiply   (const Matrix<T>&, const Matrix<T>&, Matrix<T>&);
+	static void blockMultiply2  (const Matrix<T>&, const Matrix<T>&, Matrix<T>&);
 	static void add			    (const Matrix<T>&, const Matrix<T>&, Matrix<T>&);
 	static void upperTriangulate(Matrix<T>&      , Matrix<T>&      , T&);
     static void transpose       (const Matrix<T>&, Matrix<T>&);

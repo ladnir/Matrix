@@ -28,8 +28,8 @@ int main(int argc, char* argv){
         //m1.print();
         //m2.print();
     
-        Matrix<float>::multiply(m1, m2, out);
-        //Matrix<float>::blockMultiply(m1, m2, out);
+        //Matrix<float>::multiply(m1, m2, out);
+        Matrix<float>::blockMultiply2(m1, m2, out);
     }
 	return 1;
 }

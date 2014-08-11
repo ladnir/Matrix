@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdlib.h> 
 #include <assert.h>
-
+#include <cmath>
 #include "Matrix.h"
 
 #pragma region Constructors
@@ -216,6 +216,113 @@ template<typename T> void Matrix<T>::blockMultiply(const Matrix<T>& m1,
         sum += product(i);
     }
     assert(32483663872.0 == sum);
+
+}
+
+
+#define TopLeft     0
+#define TopRight    1
+#define BottmLeft   2
+#define BottomRight 3
+#define Done		4
+
+template<typename T> void Matrix<T>::blockMultiply2(const Matrix<T>& m1,
+												   const Matrix<T>& m2,
+	 											   Matrix<T>& product)
+{
+	if (product.data == nullptr)
+		product.initialize(m2.xDim, m1.yDim);
+
+	int depth = (int)log2(m1.xDim) + 1; // fix assumption
+	
+	int states[11]; // = (int*)malloc(sizeof(int)* depth);
+	int Xs    [11]; // = (int*)malloc(sizeof(int)* depth);
+	int Ys    [11]; // = (int*)malloc(sizeof(int)* depth);
+	int Widths[11]; // = (int*)malloc(sizeof(int)* depth);
+
+	int myDepth = 0;
+	states[0] = TopLeft;
+	Xs[0]     = 0;
+	Ys[0]     = 0;
+	Widths[0] = m1.xDim; // fix assumption
+
+	Matrix<T> m2Trans;
+	transpose(m2, m2Trans);
+	T sum = 0;
+
+	while (myDepth >= 0){
+		if (myDepth < 4)
+			printf("%d,%d,%d   --  %d\n", states[0],states[1],states[2], myDepth);
+		//printf("d%d\tw%d\ts%d\t(%d,%d)\n", myDepth, Widths[myDepth],states[myDepth], Xs[myDepth], Ys[myDepth]);
+		switch (states[myDepth])
+		{
+		case TopLeft:
+			if (Widths[myDepth] == 1){
+				int x = Xs[myDepth], y = Ys[myDepth];
+				// Hit base case, compute product and unwind recurrion to the previous depth;
+				//printf("d%d\t(%d,%d)\n", myDepth,Xs[myDepth], Ys[myDepth]);
+				product(x, y ) = 0;
+				for (int inner = 0; inner < m1.xDim; inner++){
+					product(x, y) += m1(inner, y) * m2Trans(inner, x);
+				}
+				sum += product(x, y);
+				myDepth--;
+				break;
+			}
+
+			// recurs deeper on the top left quarter of the matrix.
+			Xs[myDepth + 1] = Xs[myDepth];
+			Ys[myDepth + 1] = Ys[myDepth];
+			states[myDepth]++;
+			states[myDepth + 1] = 0;
+			Widths[myDepth + 1] = Widths[myDepth] / 2;
+			myDepth++;
+
+
+			break;
+		case TopRight:
+			// recurs deeper on the top right quarter of the matrix.
+			Ys[myDepth + 1] = Ys[myDepth];
+			Xs[myDepth + 1] = Xs[myDepth] + Widths[myDepth] / 2;
+			states[myDepth]++;
+			states[myDepth + 1] = 0;
+			Widths[myDepth + 1] = Widths[myDepth] / 2;
+			myDepth++;
+
+
+			break;
+		case BottmLeft:
+			// recurs deeper on the bottom left quarter of the matrix.
+			Xs[myDepth + 1] = Xs[myDepth];
+			Ys[myDepth + 1] = Ys[myDepth] + Widths[myDepth] / 2;
+			states[myDepth]++;
+			states[myDepth + 1] = 0;
+			Widths[myDepth + 1] = Widths[myDepth] / 2;
+			myDepth++;
+
+			break;
+		case BottomRight:
+			// recurs deeper on the bottom right quarter of the matrix.
+			Xs[myDepth + 1] = Xs[myDepth] + Widths[myDepth] / 2;
+			Ys[myDepth + 1] = Ys[myDepth] + Widths[myDepth] / 2;
+			states[myDepth]++;
+			states[myDepth + 1] = 0;
+			Widths[myDepth + 1] = Widths[myDepth] / 2;
+			myDepth++;
+
+
+			break;
+		case Done:
+			// unwind recurrion to the previous depth;
+			myDepth--;
+			break;
+		default:
+			assert(0 && "default reached");
+			break;
+		}
+	}
+
+	//assert(32483663872.0 == sum);
 
 }
 
